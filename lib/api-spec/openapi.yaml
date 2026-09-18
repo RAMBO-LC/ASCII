@@ -10,6 +10,12 @@ servers:
 tags:
   - name: health
     description: Health operations
+  - name: dashboard
+    description: Learning dashboard operations
+  - name: topics
+    description: Topic-based mentor conversations
+  - name: learning
+    description: Roadmaps and learning resources
 paths:
   /healthz:
     get:
@@ -24,7 +30,142 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+  /dashboard:
+    get:
+      operationId: getDashboard
+      tags: [dashboard]
+      summary: Get dashboard overview
+      responses:
+        "200":
+          description: Dashboard overview
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Dashboard"
+  /topics:
+    get:
+      operationId: listTopics
+      tags: [topics]
+      summary: List mentor topics
+      responses:
+        "200":
+          description: Topic list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Topic"
+    post:
+      operationId: createTopic
+      tags: [topics]
+      summary: Create a mentor topic
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TopicInput"
+      responses:
+        "201":
+          description: Created topic
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Topic"
+  /topics/{topicId}/messages:
+    get:
+      operationId: listMessages
+      tags: [topics]
+      summary: List messages for a topic
+      parameters:
+        - $ref: "#/components/parameters/TopicId"
+      responses:
+        "200":
+          description: Message list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Message"
+    post:
+      operationId: sendMessage
+      tags: [topics]
+      summary: Send a message to the AI mentor
+      parameters:
+        - $ref: "#/components/parameters/TopicId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MessageInput"
+      responses:
+        "201":
+          description: Persisted user message and mentor reply
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ChatResponse"
+  /streak/heartbeat:
+    post:
+      operationId: heartbeatStreak
+      tags: [dashboard]
+      summary: Record today's learning activity
+      responses:
+        "200":
+          description: Updated streak
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Streak"
+  /roadmaps/{slug}:
+    get:
+      operationId: getRoadmap
+      tags: [learning]
+      summary: Get a structured learning roadmap
+      parameters:
+        - name: slug
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Roadmap
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Roadmap"
+  /resources:
+    get:
+      operationId: listResources
+      tags: [learning]
+      summary: List curated learning resources
+      parameters:
+        - name: topic
+          in: query
+          required: false
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Learning resources
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Resource"
 components:
+  parameters:
+    TopicId:
+      name: topicId
+      in: path
+      required: true
+      schema:
+        type: string
   schemas:
     HealthStatus:
       type: object
@@ -33,4 +174,153 @@ components:
           type: string
       required:
         - status
+    Dashboard:
+      type: object
+      required: [firstName, currentGoal, streak, topicCount, resourceCount, recentActivity]
+      properties:
+        firstName:
+          type: string
+        currentGoal:
+          type: string
+        streak:
+          $ref: "#/components/schemas/Streak"
+        topicCount:
+          type: integer
+        resourceCount:
+          type: integer
+        recentActivity:
+          type: array
+          items:
+            $ref: "#/components/schemas/Activity"
+    Streak:
+      type: object
+      required: [count, lastActive, message]
+      properties:
+        count:
+          type: integer
+        lastActive:
+          type: string
+        message:
+          type: string
+    Activity:
+      type: object
+      required: [id, label, detail, time]
+      properties:
+        id:
+          type: string
+        label:
+          type: string
+        detail:
+          type: string
+        time:
+          type: string
+    Topic:
+      type: object
+      required: [id, title, techStack, messageCount, lastMessageAt, createdAt]
+      properties:
+        id:
+          type: string
+        title:
+          type: string
+        techStack:
+          type: array
+          items:
+            type: string
+        roadmapRef:
+          type: ["string", "null"]
+        messageCount:
+          type: integer
+        lastMessageAt:
+          type: ["string", "null"]
+        createdAt:
+          type: string
+    TopicInput:
+      type: object
+      required: [title]
+      properties:
+        title:
+          type: string
+          minLength: 1
+        techStack:
+          type: array
+          items:
+            type: string
+    Message:
+      type: object
+      required: [id, topicId, role, content, createdAt]
+      properties:
+        id:
+          type: string
+        topicId:
+          type: string
+        role:
+          type: string
+          enum: [user, assistant]
+        content:
+          type: string
+        createdAt:
+          type: string
+    MessageInput:
+      type: object
+      required: [content]
+      properties:
+        content:
+          type: string
+          minLength: 1
+    ChatResponse:
+      type: object
+      required: [userMessage, assistantMessage]
+      properties:
+        userMessage:
+          $ref: "#/components/schemas/Message"
+        assistantMessage:
+          $ref: "#/components/schemas/Message"
+    Roadmap:
+      type: object
+      required: [slug, title, description, phases]
+      properties:
+        slug:
+          type: string
+        title:
+          type: string
+        description:
+          type: string
+        phases:
+          type: array
+          items:
+            $ref: "#/components/schemas/RoadmapPhase"
+    RoadmapPhase:
+      type: object
+      required: [id, title, duration, topics, completed]
+      properties:
+        id:
+          type: string
+        title:
+          type: string
+        duration:
+          type: string
+        topics:
+          type: array
+          items:
+            type: string
+        completed:
+          type: boolean
+    Resource:
+      type: object
+      required: [id, title, description, type, duration, url, accent]
+      properties:
+        id:
+          type: string
+        title:
+          type: string
+        description:
+          type: string
+        type:
+          type: string
+        duration:
+          type: string
+        url:
+          type: string
+        accent:
+          type: string
 
