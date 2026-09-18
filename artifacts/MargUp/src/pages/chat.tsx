@@ -34,7 +34,11 @@ export function ChatPage() {
     send.mutate(
       { topicId, content },
       {
-        onError: () => toast.error("The mentor could not answer. Try again."),
+        onError: () => {
+          // Keep the message in the box so a retry is one tap.
+          setInput(content);
+          toast.error("The mentor is busy. Your message is kept — try again.");
+        },
       },
     );
   };

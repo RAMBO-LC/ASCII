@@ -706,6 +706,74 @@ function iso(date: Date | null): string | null {
   return date ? date.toISOString() : null;
 }
 
+type GeminiContent = Array<{
+  role: string;
+  parts: Array<{ text: string }>;
+}>;
+
+type GeminiResult =
+  | { ok: true; text: string }
+  | { ok: false; status: number; errorText: string };
+
+// Gemini's free tier often answers 429/503 under load. Retry transient
+// failures with backoff instead of failing the learner's first attempt.
+const TRANSIENT_STATUS = new Set([408, 425, 429, 500, 502, 503, 504]);
+
+async function callGemini(options: {
+  apiKey: string;
+  model: string;
+  systemInstruction: string;
+  contents: GeminiContent;
+  maxOutputTokens: number;
+}): Promise<GeminiResult> {
+  let last: GeminiResult = { ok: false, status: 0, errorText: "no attempt" };
+  for (let attempt = 0; attempt < 3; attempt++) {
+    if (attempt > 0) {
+      await new Promise((resolve) => setTimeout(resolve, 1000 * attempt));
+    }
+    try {
+      const response = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/${options.model}:generateContent?key=${encodeURIComponent(options.apiKey)}`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            systemInstruction: { parts: [{ text: options.systemInstruction }] },
+            contents: options.contents,
+            generationConfig: {
+              temperature: 0.7,
+              maxOutputTokens: options.maxOutputTokens,
+            },
+          }),
+        },
+      );
+      if (!response.ok) {
+        last = {
+          ok: false,
+          status: response.status,
+          errorText: await response.text(),
+        };
+        if (!TRANSIENT_STATUS.has(response.status)) break;
+        continue;
+      }
+      const payload = (await response.json()) as {
+        candidates?: Array<{ content?: { parts?: Array<{ text?: string }> } }>;
+      };
+      const text = payload.candidates?.[0]?.content?.parts
+        ?.map((part) => part.text ?? "")
+        .join("")
+        ?.trim();
+      if (!text) {
+        return { ok: false, status: 502, errorText: "empty answer" };
+      }
+      return { ok: true, text };
+    } catch (error) {
+      last = { ok: false, status: 0, errorText: String(error) };
+    }
+  }
+  return last;
+}
+
 const AUTO_TITLE = "New conversation";
 
 /** Turn the first user message into a short, readable chat title. */
@@ -978,74 +1046,49 @@ router.post("/topics/:topicId/messages", async (req, res): Promise<void> => {
   }
   const model = process.env.GEMINI_MODEL ?? "gemini-3.6-flash";
 
-  try {
-    const geminiResponse = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodeURIComponent(apiKey)}`,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          systemInstruction: { parts: [{ text: SYSTEM_INSTRUCTION }] },
-          contents: history.reverse().map((message) => ({
-            role: message.role === "assistant" ? "model" : "user",
-            parts: [{ text: message.content }],
-          })),
-          generationConfig: { temperature: 0.7, maxOutputTokens: 8192 },
-        }),
-      },
+  const gemini = await callGemini({
+    apiKey,
+    model,
+    systemInstruction: SYSTEM_INSTRUCTION,
+    contents: history.reverse().map((message) => ({
+      role: message.role === "assistant" ? "model" : "user",
+      parts: [{ text: message.content }],
+    })),
+    maxOutputTokens: 8192,
+  });
+  if (!gemini.ok) {
+    req.log.error(
+      { status: gemini.status, errorText: gemini.errorText },
+      "Gemini request failed",
     );
-    if (!geminiResponse.ok) {
-      const errorText = await geminiResponse.text();
-      req.log.error(
-        { status: geminiResponse.status, errorText },
-        "Gemini request failed",
-      );
-      res
-        .status(502)
-        .json({ error: "The AI mentor could not answer right now." });
-      return;
-    }
-    const payload = (await geminiResponse.json()) as {
-      candidates?: Array<{ content?: { parts?: Array<{ text?: string }> } }>;
-    };
-    const reply = payload.candidates?.[0]?.content?.parts
-      ?.map((part) => part.text ?? "")
-      .join("")
-      ?.trim();
-    if (!reply) {
-      res
-        .status(502)
-        .json({ error: "The AI mentor returned an empty answer." });
-      return;
-    }
-    const [assistantMessage] = await db
-      .insert(messagesTable)
-      .values({ topicId: topic.id, role: "assistant", content: reply })
-      .returning();
-    res.status(201).json(
-      SendMessageResponse.parse({
-        userMessage: {
-          id: userMessage.id,
-          topicId: userMessage.topicId,
-          role: userMessage.role,
-          content: userMessage.content,
-          createdAt: userMessage.createdAt.toISOString(),
-        },
-        assistantMessage: {
-          id: assistantMessage.id,
-          topicId: assistantMessage.topicId,
-          role: assistantMessage.role,
-          content: assistantMessage.content,
-          createdAt: assistantMessage.createdAt.toISOString(),
-        },
-      }),
-    );
-  } catch (error) {
-    req.log.error({ error }, "Gemini request failed");
     res
       .status(502)
       .json({ error: "The AI mentor could not answer right now." });
+    return;
   }
+  const reply = gemini.text;
+  const [assistantMessage] = await db
+    .insert(messagesTable)
+    .values({ topicId: topic.id, role: "assistant", content: reply })
+    .returning();
+  res.status(201).json(
+    SendMessageResponse.parse({
+      userMessage: {
+        id: userMessage.id,
+        topicId: userMessage.topicId,
+        role: userMessage.role,
+        content: userMessage.content,
+        createdAt: userMessage.createdAt.toISOString(),
+      },
+      assistantMessage: {
+        id: assistantMessage.id,
+        topicId: assistantMessage.topicId,
+        role: assistantMessage.role,
+        content: assistantMessage.content,
+        createdAt: assistantMessage.createdAt.toISOString(),
+      },
+    }),
+  );
 });
 
 router.get("/roadmaps", (_req, res): void => {
@@ -1125,55 +1168,29 @@ router.post("/roadmaps/:slug/advice", async (req, res): Promise<void> => {
     "Coach, don't lecture: what matters most, the common mistakes, one small no-code exercise, and what to do this week. Never output code snippets or code blocks — describe ideas in plain words. Concise Markdown. End with exactly one next step.",
   ].join("\n\n");
 
-  try {
-    const geminiResponse = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodeURIComponent(apiKey)}`,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          systemInstruction: { parts: [{ text: SYSTEM_INSTRUCTION }] },
-          contents: [{ role: "user", parts: [{ text: prompt }] }],
-          generationConfig: { temperature: 0.7, maxOutputTokens: 2048 },
-        }),
-      },
+  const gemini = await callGemini({
+    apiKey,
+    model,
+    systemInstruction: SYSTEM_INSTRUCTION,
+    contents: [{ role: "user", parts: [{ text: prompt }] }],
+    maxOutputTokens: 2048,
+  });
+  if (!gemini.ok) {
+    req.log.error(
+      { status: gemini.status, errorText: gemini.errorText },
+      "Gemini roadmap advice failed",
     );
-    if (!geminiResponse.ok) {
-      const errorText = await geminiResponse.text();
-      req.log.error(
-        { status: geminiResponse.status, errorText },
-        "Gemini roadmap advice failed",
-      );
-      res
-        .status(502)
-        .json({ error: "The AI mentor could not answer right now." });
-      return;
-    }
-    const payload = (await geminiResponse.json()) as {
-      candidates?: Array<{ content?: { parts?: Array<{ text?: string }> } }>;
-    };
-    const advice = payload.candidates?.[0]?.content?.parts
-      ?.map((part) => part.text ?? "")
-      .join("")
-      ?.trim();
-    if (!advice) {
-      res
-        .status(502)
-        .json({ error: "The AI mentor returned an empty answer." });
-      return;
-    }
-    res.json(
-      RequestRoadmapAdviceResponse.parse({
-        advice,
-        phaseId: phase?.id ?? null,
-      }),
-    );
-  } catch (error) {
-    req.log.error({ error }, "Gemini roadmap advice failed");
     res
       .status(502)
       .json({ error: "The AI mentor could not answer right now." });
+    return;
   }
+  res.json(
+    RequestRoadmapAdviceResponse.parse({
+      advice: gemini.text,
+      phaseId: phase?.id ?? null,
+    }),
+  );
 });
 
 router.get("/resources", async (req, res): Promise<void> => {

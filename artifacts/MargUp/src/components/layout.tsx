@@ -127,29 +127,17 @@ export function AppShell({ children }: { children: ReactNode }) {
 
       {/* ── Mobile top bar ────────────────────────────────── */}
       <div className="sticky top-0 z-50 border-b border-border bg-background/90 backdrop-blur-md lg:hidden">
-        <div className="flex items-center gap-2 px-4 py-3">
+        <div className="flex items-center justify-between gap-2 px-4 py-3">
           <Link href="/" aria-label="MargUp home">
-            <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-primary text-primary-foreground">
-              <Sparkles className="h-3.5 w-3.5" strokeWidth={2.5} />
+            <span className="flex items-center gap-2">
+              <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-primary text-primary-foreground">
+                <Sparkles className="h-3.5 w-3.5" strokeWidth={2.5} />
+              </span>
+              <span className="font-display text-[15px] font-bold tracking-tight">
+                MargUp
+              </span>
             </span>
           </Link>
-          <nav className="flex flex-1 items-center gap-1" aria-label="Primary">
-            {NAV.map((item) => (
-              <Link key={item.id} href={item.href} aria-label={item.label}>
-                <span
-                  className={cn(
-                    "flex min-h-[44px] cursor-pointer items-center gap-1.5 rounded-lg px-2.5 py-2 text-[13px] font-medium",
-                    active === item.id
-                      ? "bg-secondary text-foreground"
-                      : "text-muted-foreground",
-                  )}
-                >
-                  <item.icon className="h-4 w-4" />
-                  <span className="hidden sm:inline">{item.label}</span>
-                </span>
-              </Link>
-            ))}
-          </nav>
           <UserButton
             appearance={{
               elements: {
@@ -160,9 +148,62 @@ export function AppShell({ children }: { children: ReactNode }) {
         </div>
       </div>
 
+      {/* ── Mobile bottom dock ────────────────────────────── */}
+      <nav
+        aria-label="Primary"
+        className="fixed inset-x-[5px] z-50 lg:hidden"
+        style={{ bottom: "max(5px, env(safe-area-inset-bottom))" }}
+      >
+        <div className="flex items-center gap-1 rounded-full border border-border bg-background/90 p-1.5 shadow-lg shadow-black/40 backdrop-blur-md">
+          {NAV.map((item) => {
+            const isActive = active === item.id;
+            return (
+              <Link
+                key={item.id}
+                href={item.href}
+                aria-label={item.label}
+                aria-current={isActive ? "page" : undefined}
+                className="min-w-0 flex-1"
+              >
+                <span
+                  className={cn(
+                    "relative flex min-h-[48px] cursor-pointer flex-col items-center justify-center gap-0.5 rounded-full px-1 py-1.5 transition-colors",
+                    isActive
+                      ? "text-foreground"
+                      : "text-muted-foreground",
+                  )}
+                >
+                  {isActive && (
+                    <motion.span
+                      layoutId="dockIndicator"
+                      className="absolute inset-0 rounded-full bg-secondary"
+                      transition={{
+                        type: "spring",
+                        bounce: 0.2,
+                        duration: 0.5,
+                      }}
+                    />
+                  )}
+                  <item.icon
+                    className={cn(
+                      "relative z-10 h-5 w-5",
+                      isActive && "text-primary",
+                    )}
+                    strokeWidth={isActive ? 2.25 : 2}
+                  />
+                  <span className="relative z-10 text-[10px] font-semibold leading-none">
+                    {item.label}
+                  </span>
+                </span>
+              </Link>
+            );
+          })}
+        </div>
+      </nav>
+
       {/* ── Content ───────────────────────────────────────── */}
       <main className="min-w-0 flex-1">
-        <div className="mx-auto w-full max-w-5xl px-4 pb-16 pt-6 sm:px-8 sm:pt-8">
+        <div className="mx-auto w-full max-w-5xl px-4 pb-28 pt-6 sm:px-8 sm:pt-8 lg:pb-16">
           {children}
         </div>
       </main>
