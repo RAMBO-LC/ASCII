@@ -1,0 +1,28 @@
+kind = "web"
+previewPath = "/"
+title = "MargUp"
+description = "A focused AI learning coach for Indian college students learning programming and technology. It combines topic-based mentoring, progress tracking, streaks, and curated roadmaps in one encouraging workspace."
+version = "1.0.0"
+id = "artifacts/MargUp"
+router = "path"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 24619
+
+[services.development]
+run = "pnpm --filter @workspace/MargUp run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/MargUp", "run", "build" ]
+serve = "static"
+publicDir = "artifacts/MargUp/dist/public"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "24619"
+BASE_PATH = "/"

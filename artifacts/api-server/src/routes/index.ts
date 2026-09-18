@@ -1,10 +1,10 @@
 import { Router, type IRouter } from "express";
 import healthRouter from "./health";
-import devmentorRouter from "./devmentor";
+import MargUpRouter from "./MargUp";
 
 const router: IRouter = Router();
 
 router.use(healthRouter);
-router.use(devmentorRouter);
+router.use(MargUpRouter);
 
 export default router;

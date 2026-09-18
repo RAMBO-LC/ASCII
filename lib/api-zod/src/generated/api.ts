@@ -23,11 +23,6 @@ export const HealthCheckResponse = zod.object({
 export const GetDashboardResponse = zod.object({
   "firstName": zod.string(),
   "currentGoal": zod.string(),
-  "streak": zod.object({
-  "count": zod.number().int(),
-  "lastActive": zod.string(),
-  "message": zod.string()
-}),
   "topicCount": zod.number().int(),
   "resourceCount": zod.number().int(),
   "recentActivity": zod.array(zod.object({
@@ -61,7 +56,7 @@ export const ListTopicsResponse = zod.array(ListTopicsResponseItem)
 
 
 export const CreateTopicBody = zod.object({
-  "title": zod.string().min(1),
+  "title": zod.string().min(1).optional().describe('Optional. Omit to auto-generate from the first message.'),
   "techStack": zod.array(zod.string()).optional()
 })
 
@@ -74,6 +69,16 @@ export const CreateTopicResponse = zod.object({
   "lastMessageAt": zod.string().nullable(),
   "createdAt": zod.string()
 })
+
+
+/**
+ * @summary Delete a mentor topic
+ */
+export const DeleteTopicParams = zod.object({
+  "topicId": zod.coerce.string()
+})
+
+export const DeleteTopicResponse = zod.void()
 
 
 /**
@@ -126,16 +131,6 @@ export const SendMessageResponse = zod.object({
 
 
 /**
- * @summary Record today's learning activity
- */
-export const HeartbeatStreakResponse = zod.object({
-  "count": zod.number().int(),
-  "lastActive": zod.string(),
-  "message": zod.string()
-})
-
-
-/**
  * @summary Get a structured learning roadmap
  */
 export const GetRoadmapParams = zod.object({
@@ -146,6 +141,9 @@ export const GetRoadmapResponse = zod.object({
   "slug": zod.string(),
   "title": zod.string(),
   "description": zod.string(),
+  "level": zod.string().describe('e.g. Beginner-friendly'),
+  "audience": zod.string().describe('Who this path is for'),
+  "outcomes": zod.array(zod.string()).describe('What the learner can do after finishing'),
   "phases": zod.array(zod.object({
   "id": zod.string(),
   "title": zod.string(),
@@ -153,6 +151,40 @@ export const GetRoadmapResponse = zod.object({
   "topics": zod.array(zod.string()),
   "completed": zod.boolean()
 }))
+})
+
+
+/**
+ * @summary List all roadmap paths
+ */
+export const ListRoadmapsResponseItem = zod.object({
+  "slug": zod.string(),
+  "title": zod.string(),
+  "description": zod.string(),
+  "level": zod.string(),
+  "audience": zod.string(),
+  "phaseCount": zod.number().int(),
+  "allTopics": zod.array(zod.string()).describe('Flat list of every topic across phases, for search')
+})
+export const ListRoadmapsResponse = zod.array(ListRoadmapsResponseItem)
+
+
+/**
+ * Calls the AI mentor only when the learner explicitly asks, optionally scoped to one phase plus a follow-up question.
+ * @summary Get opt-in AI guidance for a roadmap
+ */
+export const RequestRoadmapAdviceParams = zod.object({
+  "slug": zod.coerce.string()
+})
+
+export const RequestRoadmapAdviceBody = zod.object({
+  "phaseId": zod.string().optional().describe('Scope guidance to one phase; omit for the whole roadmap'),
+  "question": zod.string().optional().describe('Optional follow-up question about this roadmap')
+})
+
+export const RequestRoadmapAdviceResponse = zod.object({
+  "advice": zod.string().describe('Markdown guidance from the AI mentor'),
+  "phaseId": zod.string().nullish()
 })
 
 
@@ -173,5 +205,27 @@ export const ListResourcesResponseItem = zod.object({
   "accent": zod.string()
 })
 export const ListResourcesResponse = zod.array(ListResourcesResponseItem)
+
+
+/**
+ * Step-by-step social and portfolio playbooks (LinkedIn, X, GitHub) tuned for beginners.
+ * @summary List career-growth playbooks
+ */
+export const ListPlaybooksResponseItem = zod.object({
+  "slug": zod.string(),
+  "title": zod.string(),
+  "platform": zod.string().describe('e.g. LinkedIn, X, GitHub'),
+  "tagline": zod.string(),
+  "description": zod.string(),
+  "audience": zod.string(),
+  "level": zod.string(),
+  "sections": zod.array(zod.object({
+  "id": zod.string(),
+  "title": zod.string(),
+  "body": zod.string().describe('Markdown guidance for this section'),
+  "points": zod.array(zod.string())
+}))
+})
+export const ListPlaybooksResponse = zod.array(ListPlaybooksResponseItem)
 
 

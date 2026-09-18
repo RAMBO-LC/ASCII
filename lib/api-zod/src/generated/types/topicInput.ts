@@ -7,7 +7,10 @@
  */
 
 export interface TopicInput {
-  /** @minLength 1 */
-  title: string;
+  /**
+     * Optional. Omit to auto-generate from the first message.
+     * @minLength 1
+     */
+  title?: string;
   techStack?: string[];
 }

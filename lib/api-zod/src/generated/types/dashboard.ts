@@ -6,12 +6,10 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { Activity } from './activity';
-import type { Streak } from './streak';
 
 export interface Dashboard {
   firstName: string;
   currentGoal: string;
-  streak: Streak;
   topicCount: number;
   resourceCount: number;
   recentActivity: Activity[];

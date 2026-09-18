@@ -1,5 +1,17 @@
+import "./lib/env";
 import app from "./app";
 import { logger } from "./lib/logger";
+
+// Never die silently: log the cause so /tmp/apiserver.log (or prod logs)
+// always explains a crash. A supervisor (or the platform) restarts us.
+process.on("unhandledRejection", (reason) => {
+  logger.error({ reason }, "Unhandled promise rejection");
+});
+
+process.on("uncaughtException", (err) => {
+  logger.error({ err }, "Uncaught exception — exiting");
+  process.exit(1);
+});
 
 const rawPort = process.env["PORT"];
 

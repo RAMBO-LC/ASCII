@@ -9,12 +9,6 @@ export interface HealthStatus {
   status: string;
 }
 
-export interface Streak {
-  count: number;
-  lastActive: string;
-  message: string;
-}
-
 export interface Activity {
   id: string;
   label: string;
@@ -25,7 +19,6 @@ export interface Activity {
 export interface Dashboard {
   firstName: string;
   currentGoal: string;
-  streak: Streak;
   topicCount: number;
   resourceCount: number;
   recentActivity: Activity[];
@@ -44,8 +37,11 @@ export interface Topic {
 }
 
 export interface TopicInput {
-  /** @minLength 1 */
-  title: string;
+  /**
+     * Optional. Omit to auto-generate from the first message.
+     * @minLength 1
+     */
+  title?: string;
   techStack?: string[];
 }
 
@@ -87,7 +83,38 @@ export interface Roadmap {
   slug: string;
   title: string;
   description: string;
+  /** e.g. Beginner-friendly */
+  level: string;
+  /** Who this path is for */
+  audience: string;
+  /** What the learner can do after finishing */
+  outcomes: string[];
   phases: RoadmapPhase[];
+}
+
+export interface RoadmapSummary {
+  slug: string;
+  title: string;
+  description: string;
+  level: string;
+  audience: string;
+  phaseCount: number;
+  /** Flat list of every topic across phases, for search */
+  allTopics: string[];
+}
+
+export interface RoadmapAdviceInput {
+  /** Scope guidance to one phase; omit for the whole roadmap */
+  phaseId?: string;
+  /** Optional follow-up question about this roadmap */
+  question?: string;
+}
+
+export interface RoadmapAdvice {
+  /** Markdown guidance from the AI mentor */
+  advice: string;
+  /** @nullable */
+  phaseId?: string | null;
 }
 
 export interface Resource {
@@ -98,6 +125,26 @@ export interface Resource {
   duration: string;
   url: string;
   accent: string;
+}
+
+export interface PlaybookSection {
+  id: string;
+  title: string;
+  /** Markdown guidance for this section */
+  body: string;
+  points: string[];
+}
+
+export interface Playbook {
+  slug: string;
+  title: string;
+  /** e.g. LinkedIn, X, GitHub */
+  platform: string;
+  tagline: string;
+  description: string;
+  audience: string;
+  level: string;
+  sections: PlaybookSection[];
 }
 
 export type ListResourcesParams = {

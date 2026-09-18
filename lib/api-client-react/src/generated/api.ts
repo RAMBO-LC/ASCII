@@ -26,9 +26,12 @@ import type {
   ListResourcesParams,
   Message,
   MessageInput,
+  Playbook,
   Resource,
   Roadmap,
-  Streak,
+  RoadmapAdvice,
+  RoadmapAdviceInput,
+  RoadmapSummary,
   Topic,
   TopicInput
 } from './api.schemas';
@@ -380,6 +383,80 @@ export const useCreateTopic = <TError = ErrorType<unknown>,
       return useMutation(getCreateTopicMutationOptions(options));
     }
 
+export const getDeleteTopicUrl = (topicId: string,) => {
+
+
+
+
+  return `/api/topics/${topicId}`
+}
+
+/**
+ * @summary Delete a mentor topic
+ */
+export const deleteTopic = async (topicId: string, options?: Parameters<typeof customFetch>[1]): Promise<void> => {
+
+  return customFetch<void>(getDeleteTopicUrl(topicId),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+
+export const getDeleteTopicMutationKey = () => ['deleteTopic'] as const;
+
+export const getDeleteTopicMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteTopic>>, TError,DeleteTopicMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof deleteTopic>>, TError,DeleteTopicMutationVariables, TContext> => {
+
+const mutationKey = getDeleteTopicMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof deleteTopic>>, DeleteTopicMutationVariables> = (props) => {
+          const {topicId} = props ?? {};
+
+          return  deleteTopic(topicId,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DeleteTopicMutationResult = NonNullable<Awaited<ReturnType<typeof deleteTopic>>>
+
+    export type DeleteTopicMutationError = ErrorType<unknown>
+    export type DeleteTopicMutationVariables = {topicId: string}
+
+    /**
+ * @summary Delete a mentor topic
+ */
+export const useDeleteTopic = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteTopic>>, TError,DeleteTopicMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof deleteTopic>>,
+        TError,
+        DeleteTopicMutationVariables,
+        TContext
+      > => {
+      return useMutation(getDeleteTopicMutationOptions(options));
+    }
+
 export const getListMessagesUrl = (topicId: string,) => {
 
 
@@ -546,80 +623,6 @@ export const useSendMessage = <TError = ErrorType<unknown>,
       return useMutation(getSendMessageMutationOptions(options));
     }
 
-export const getHeartbeatStreakUrl = () => {
-
-
-
-
-  return `/api/streak/heartbeat`
-}
-
-/**
- * @summary Record today's learning activity
- */
-export const heartbeatStreak = async ( options?: Parameters<typeof customFetch>[1]): Promise<Streak> => {
-
-  return customFetch<Streak>(getHeartbeatStreakUrl(),
-  {
-    ...options,
-    method: 'POST'
-
-
-  }
-);}
-
-
-
-
-
-export const getHeartbeatStreakMutationKey = () => ['heartbeatStreak'] as const;
-
-export const getHeartbeatStreakMutationOptions = <TError = ErrorType<unknown>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof heartbeatStreak>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
-): UseMutationOptions<Awaited<ReturnType<typeof heartbeatStreak>>, TError,void, TContext> => {
-
-const mutationKey = getHeartbeatStreakMutationKey();
-const {mutation: mutationOptions, request: requestOptions} = options ?
-      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
-      options
-      : {...options, mutation: {...options.mutation, mutationKey}}
-      : {mutation: { mutationKey, }, request: undefined};
-
-
-
-
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof heartbeatStreak>>, void> = () => {
-
-
-          return  heartbeatStreak(requestOptions)
-        }
-
-
-
-
-
-
-  return  { mutationFn, ...mutationOptions }}
-
-    export type HeartbeatStreakMutationResult = NonNullable<Awaited<ReturnType<typeof heartbeatStreak>>>
-
-    export type HeartbeatStreakMutationError = ErrorType<unknown>
-
-
-    /**
- * @summary Record today's learning activity
- */
-export const useHeartbeatStreak = <TError = ErrorType<unknown>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof heartbeatStreak>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
- ): UseMutationResult<
-        Awaited<ReturnType<typeof heartbeatStreak>>,
-        TError,
-        void,
-        TContext
-      > => {
-      return useMutation(getHeartbeatStreakMutationOptions(options));
-    }
-
 export const getGetRoadmapUrl = (slug: string,) => {
 
 
@@ -697,6 +700,173 @@ export function useGetRoadmap<TData = Awaited<ReturnType<typeof getRoadmap>>, TE
 
 
 
+export const getListRoadmapsUrl = () => {
+
+
+
+
+  return `/api/roadmaps`
+}
+
+/**
+ * @summary List all roadmap paths
+ */
+export const listRoadmaps = async ( options?: Parameters<typeof customFetch>[1]): Promise<RoadmapSummary[]> => {
+
+  return customFetch<RoadmapSummary[]>(getListRoadmapsUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListRoadmapsQueryKey = () => {
+    return [
+    `/api/roadmaps`
+    ] as const;
+    }
+
+
+export const getListRoadmapsQueryOptions = <TData = Awaited<ReturnType<typeof listRoadmaps>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listRoadmaps>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListRoadmapsQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listRoadmaps>>> = ({ signal }) => listRoadmaps({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listRoadmaps>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListRoadmapsQueryResult = NonNullable<Awaited<ReturnType<typeof listRoadmaps>>>
+export type ListRoadmapsQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary List all roadmap paths
+ */
+
+export function useListRoadmaps<TData = Awaited<ReturnType<typeof listRoadmaps>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listRoadmaps>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListRoadmapsQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getRequestRoadmapAdviceUrl = (slug: string,) => {
+
+
+
+
+  return `/api/roadmaps/${slug}/advice`
+}
+
+/**
+ * Calls the AI mentor only when the learner explicitly asks, optionally scoped to one phase plus a follow-up question.
+ * @summary Get opt-in AI guidance for a roadmap
+ */
+export const requestRoadmapAdvice = async (slug: string,
+    roadmapAdviceInput?: RoadmapAdviceInput, options?: Parameters<typeof customFetch>[1]): Promise<RoadmapAdvice> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<RoadmapAdvice>(getRequestRoadmapAdviceUrl(slug),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(roadmapAdviceInput)
+  }
+);}
+
+
+
+
+
+export const getRequestRoadmapAdviceMutationKey = () => ['requestRoadmapAdvice'] as const;
+
+export const getRequestRoadmapAdviceMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof requestRoadmapAdvice>>, TError,RequestRoadmapAdviceMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof requestRoadmapAdvice>>, TError,RequestRoadmapAdviceMutationVariables, TContext> => {
+
+const mutationKey = getRequestRoadmapAdviceMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof requestRoadmapAdvice>>, RequestRoadmapAdviceMutationVariables> = (props) => {
+          const {slug,data} = props ?? {};
+
+          return  requestRoadmapAdvice(slug,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type RequestRoadmapAdviceMutationResult = NonNullable<Awaited<ReturnType<typeof requestRoadmapAdvice>>>
+    export type RequestRoadmapAdviceMutationBody = BodyType<RoadmapAdviceInput> | undefined
+    export type RequestRoadmapAdviceMutationError = ErrorType<unknown>
+    export type RequestRoadmapAdviceMutationVariables = {slug: string;data?: BodyType<RoadmapAdviceInput>}
+
+    /**
+ * @summary Get opt-in AI guidance for a roadmap
+ */
+export const useRequestRoadmapAdvice = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof requestRoadmapAdvice>>, TError,RequestRoadmapAdviceMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof requestRoadmapAdvice>>,
+        TError,
+        RequestRoadmapAdviceMutationVariables,
+        TContext
+      > => {
+      return useMutation(getRequestRoadmapAdviceMutationOptions(options));
+    }
+
 export const getListResourcesUrl = (params?: ListResourcesParams,) => {
   const normalizedParams = new URLSearchParams();
 
@@ -769,6 +939,84 @@ export function useListResources<TData = Awaited<ReturnType<typeof listResources
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
 
   const queryOptions = getListResourcesQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getListPlaybooksUrl = () => {
+
+
+
+
+  return `/api/playbooks`
+}
+
+/**
+ * Step-by-step social and portfolio playbooks (LinkedIn, X, GitHub) tuned for beginners.
+ * @summary List career-growth playbooks
+ */
+export const listPlaybooks = async ( options?: Parameters<typeof customFetch>[1]): Promise<Playbook[]> => {
+
+  return customFetch<Playbook[]>(getListPlaybooksUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListPlaybooksQueryKey = () => {
+    return [
+    `/api/playbooks`
+    ] as const;
+    }
+
+
+export const getListPlaybooksQueryOptions = <TData = Awaited<ReturnType<typeof listPlaybooks>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listPlaybooks>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListPlaybooksQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listPlaybooks>>> = ({ signal }) => listPlaybooks({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listPlaybooks>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListPlaybooksQueryResult = NonNullable<Awaited<ReturnType<typeof listPlaybooks>>>
+export type ListPlaybooksQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary List career-growth playbooks
+ */
+
+export function useListPlaybooks<TData = Awaited<ReturnType<typeof listPlaybooks>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listPlaybooks>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListPlaybooksQueryOptions(options)
 
   const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 

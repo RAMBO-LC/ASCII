@@ -11,5 +11,11 @@ export interface Roadmap {
   slug: string;
   title: string;
   description: string;
+  /** e.g. Beginner-friendly */
+  level: string;
+  /** Who this path is for */
+  audience: string;
+  /** What the learner can do after finishing */
+  outcomes: string[];
   phases: RoadmapPhase[];
 }
