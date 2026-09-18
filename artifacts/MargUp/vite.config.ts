@@ -5,27 +5,16 @@ import { defineConfig, loadEnv } from 'vite';
 
 import runtimeErrorOverlay from '@replit/vite-plugin-runtime-error-modal';
 
-const rawPort = process.env.PORT;
+// PORT/BASE_PATH are provided by the hosting platform (Replit sets both).
+// They are optional here so plain hosts like Vercel can build with defaults;
+// only the dev server actually listens on `port`.
+const port = Number(process.env.PORT ?? 24619);
 
-if (!rawPort) {
-  throw new Error(
-    'PORT environment variable is required but was not provided.',
-  );
+if (!Number.isInteger(port) || port <= 0) {
+  throw new Error(`Invalid PORT value: "${process.env.PORT}"`);
 }
 
-const port = Number(rawPort);
-
-if (Number.isNaN(port) || port <= 0) {
-  throw new Error(`Invalid PORT value: "${rawPort}"`);
-}
-
-const basePath = process.env.BASE_PATH;
-
-if (!basePath) {
-  throw new Error(
-    'BASE_PATH environment variable is required but was not provided.',
-  );
-}
+const basePath = process.env.BASE_PATH ?? "/";
 
 // All secrets live in the single repo-root `.env` (see /.env.example).
 const repoRoot = path.resolve(import.meta.dirname, '..', '..');
