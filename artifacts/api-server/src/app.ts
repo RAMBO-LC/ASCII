@@ -33,7 +33,32 @@ app.use(
   }),
 );
 app.use(CLERK_PROXY_PATH, clerkProxyMiddleware());
-app.use(cors({ credentials: true, origin: true }));
+// Production CORS is restricted to the real frontend origin(s).
+// Override with CORS_ORIGINS="https://a.example,https://b.example".
+// Local dev keeps working: localhost/127.0.0.1 + origin-less requests
+// (curl, same-origin, mobile) are allowed outside production.
+const allowedOrigins = (process.env.CORS_ORIGINS ??
+  "https://ascii-marg-up-chi.vercel.app")
+  .split(",")
+  .map((s) => s.trim())
+  .filter(Boolean);
+
+app.use(
+  cors({
+    credentials: true,
+    origin: (origin, callback) => {
+      if (!origin) return callback(null, true);
+      if (allowedOrigins.includes(origin)) return callback(null, true);
+      if (
+        process.env.NODE_ENV !== "production" &&
+        /^(https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?)$/.test(origin)
+      ) {
+        return callback(null, true);
+      }
+      callback(new Error("CORS: origin not allowed"));
+    },
+  }),
+);
 app.use(
   clerkMiddleware((req) => ({
     publishableKey: publishableKeyFromHost(
