@@ -72,4 +72,34 @@ app.use(express.urlencoded({ extended: true }));
 
 app.use("/api", router);
 
+// Central error handler (must be last): Express's default handler prints
+// only message+stack, which hides the DB driver's root cause. Log the full
+// chain server-side; clients still get a generic 500 with no internals.
+app.use(
+  (
+    err: unknown,
+    _req: express.Request,
+    res: express.Response,
+    _next: express.NextFunction,
+  ) => {
+    if (err instanceof Error) {
+      const cause =
+        err.cause instanceof Error
+          ? {
+              message: err.cause.message,
+              code: (err.cause as { code?: unknown }).code,
+              stack: err.cause.stack,
+            }
+          : err.cause;
+      logger.error(
+        { message: err.message, stack: err.stack, cause },
+        "Unhandled route error",
+      );
+    } else {
+      logger.error({ err }, "Unhandled route error");
+    }
+    res.status(500).json({ error: "Internal Server Error" });
+  },
+);
+
 export default app;
